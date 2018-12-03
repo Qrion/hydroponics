@@ -1,0 +1,7 @@
+1. Calibrate Temp Sens
+2. Mqtt host on website
+3. Display temp data
+4. Solenoid circuit
+5. Controll solenoid with code
+6. Controll solenoid with button on website
+7. Build the solenoid system
