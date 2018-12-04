@@ -18,21 +18,56 @@
 </head>
 
 <body>
-    <p><strong>Temperature:</strong></p>
-    <div id="temp"></div>
-    <div style="background-color: grey; padding: 10px;">
-        <h3>Salt Level: Placeholder </h3>
-        <button onclick="solenoidTurnOn()">Increase Salt Level</button>
-        
+    <div class="container-fluid">
+        <br>
+        <h3>Hydroponic Monitor Platform</h3>
+        <table class="table table-dark" style="width: 1000px;">
+            <thead>
+                <tr style="background-color: #27ae60;">
+                    <th scope="col">Parameter</th>
+                    <th scope="col">Desired Value</th>
+                    <th scope="col">Value</th>
+                    <th scope="col">Action</th>
+                    <th scope="col">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <th scope="row">Temperature</th>
+                    <th scope="row">22 &#8451;</th>
+                    <td id="temp">No reading</td>
+                    <td>
+                        <button onclick="solenoidTurnOn()">Auto Leveling: ON</button>
+                        <button onclick="solenoidTurnOff()">Auto Leveling: OFF</button>
+                    </td>
+                    <td id="logger"></td>
+                    
+                    
+                </tr>
+                <tr>
+                    <th scope="row">Salt Level</th>
+                    <th scope="row">30 ppt</th>
+                    <td>34 ppt</td>
+                    <td>
+                        <button onclick="">Increase Salt Level</button>
+                    </td>
+                    <td ></td>
+                </tr>
+            </tbody>
+        </table>
+
     </div>
 
 
+
     <script>
-         //https://www.eclipse.org/paho/clients/js/
+        //https://www.eclipse.org/paho/clients/js/
          //https://iot.eclipse.org/getting-started/#resources
 
          // Create a client instance
-        client = new Paho.MQTT.Client("ws://iot.eclipse.org:80/ws", "clientId");
+        //client = new Paho.MQTT.Client("ws://iot.eclipse.org:80/ws", "clientId");
+        client = new Paho.MQTT.Client("ws://test.mosquitto.org:8080/ws", "clientId");
+        
 
          // set callback handlers
         client.onConnectionLost = onConnectionLost;
@@ -44,14 +79,23 @@
         });
 
         function solenoidTurnOn() {
-            client.subscribe("fredrik/esp32/helloworld/mcu/hello");
-            message = new Paho.MQTT.Message("solenoidTurnOn");
-            message.destinationName = "fredrik/esp32/helloworld/mcu/hello";
+            client.subscribe("fredrik/esp32/helloworld/mcu/solenoid");
+            message = new Paho.MQTT.Message("on");
+            message.destinationName = "fredrik/esp32/helloworld/host/solenoid";
             client.send(message);
+            document.getElementById("logger").innerHTML = "Autoleveling: " + message.payloadString;
         }
         
-        
-        // called when the client connects
+        function solenoidTurnOff() {
+            client.subscribe("fredrik/esp32/helloworld/mcu/solenoid");
+            message = new Paho.MQTT.Message("off");
+            message.destinationName = "fredrik/esp32/helloworld/host/solenoid";
+            client.send(message);
+            document.getElementById("logger").innerHTML = "Autoleveling: " + message.payloadString;
+        }
+
+
+         // called when the client connects
         function onConnect() {
             // Once a connection has been made, make a subscription and send a message.
             console.log("onConnect");
@@ -71,11 +115,8 @@
          // called when a message arrives
         function onMessageArrived(message) {
             console.log("onMessageArrived:" + message.payloadString);
-            document.getElementById("temp").innerHTML = message.payloadString;
+            document.getElementById("temp").innerHTML = message.payloadString + " &#8451;";
         }
-        
-        
-        
     </script>
     <!-- Optional JavaScript -->
     <!-- jQuery first, then Popper.js, then Bootstrap JS -->

@@ -1,4 +1,5 @@
 from mqttclient import MQTTClient
+
 import network
 import sys
 import time
@@ -10,7 +11,8 @@ from machine import Pin, ADC
 # Important: change the line below to a unique string,
 # e.g. your name/esp34/helloworld
 session = "fredrik/esp32/helloworld"
-BROKER = "iot.eclipse.org"
+BROKER = "test.mosquitto.org"
+#BROKER = "iot.eclipse.org"
 
 
 # check wifi connection
@@ -32,22 +34,24 @@ print("Connected!")
 
 # Define function to execute when a message is recieved on a subscribed topic.
 
+x = 0
+
 def mqtt_callback(topic, msg):
     print("RECEIVE topic = {}, msg = {}".format(topic.decode('utf-8'),msg.decode('utf-8')))
+    global x 
+    x = msg.format(msg.decode('utf-8'))
     
 # Set callback function
 mqtt.set_callback(mqtt_callback)
 
 # Set a topic you will subscribe too. Publish to this topic via web client and watch microcontroller recieve messages.
 mqtt.subscribe(session + "/host/hello")
+mqtt.subscribe(session + "/host/solenoid")
 
 
 """
  Testing solenoid
 """
-a5 = Pin(A5, mode=Pin.OUT)
-a5(1)
-
 
 while True:
     
@@ -64,15 +68,30 @@ while True:
 
     # convert to temperature
     r = 10000 / (65535/thermistor_value - 1)
-
+    print(r)
     def steinhart_temperature_C(r, Ro=10000.0, To=25.0, beta=3950.0):
         import math
         steinhart = math.log(r / Ro) / beta # log(R/Ro) / beta
         steinhart += 1.0 / (To + 273.15) # log(R/Ro) / beta + 1/To
         steinhart = (1.0 / steinhart) - 273.15 # Invert, convert to C
         return steinhart
+    
+    #Adding 3 for calibration
+    tempData = steinhart_temperature_C(r) -113 
+    
+    
+    """
+        Actuation of Solenoid
+    """
 
-    tempData = steinhart_temperature_C(r)
+    a5 = Pin(A5, mode=Pin.OUT)
+    if (tempData < 22 and x == 'on'):
+        a5(1)
+    else:
+        a5(0)
+        
+        
+    print(x)
     
     """
         Send Data
@@ -80,7 +99,7 @@ while True:
     
     # Microcontroller sends hellos statements.
     topic = "{}/mcu/hello".format(session)
-    data = str(tempData)
+    data = str(round(tempData,2))
     print("send topic='{}' data='{}'".format(topic, data))
     mqtt.publish(topic, data)
     time.sleep(0.5)
@@ -88,6 +107,10 @@ while True:
     for _ in range(10):
         mqtt.check_msg()
         time.sleep(0.5)
+        
+
+        
+        
         
 # free up resources
 # alternatively reset the microphyton board before executing this program again
